@@ -179,6 +179,88 @@
     .activation-bar { height: 8px; background: var(--line); margin-top: 20px; overflow: hidden; }
     .activation-fill { height: 100%; width: 0; background: var(--orange); transition: width .2s; }
 
+    .architecture-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 14px;
+      margin-top: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+    .architecture-control { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 7px; }
+    .architecture-control span { font-size: .78rem; font-weight: 700; }
+    .architecture-control button {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      cursor: pointer;
+      font: 700 1.05rem/1 "IBM Plex Mono", monospace;
+    }
+    .architecture-control button:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+    .architecture-control button:disabled { opacity: .35; cursor: not-allowed; }
+    .architecture-value {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font: 500 .72rem/1.3 "IBM Plex Mono", monospace;
+    }
+    .parameter-lab { border-top: 1px solid var(--line); background: var(--bg); padding: clamp(22px, 4vw, 36px); }
+    .parameter-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+    .parameter-head h3 { margin: 0 0 5px; font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -.035em; }
+    .parameter-head p { margin: 0; color: var(--muted); font-size: .9rem; max-width: 62ch; }
+    .parameter-count {
+      flex: 0 0 auto;
+      color: var(--teal);
+      font: 600 .76rem/1.35 "IBM Plex Mono", monospace;
+      text-align: right;
+    }
+    .parameter-groups { display: grid; gap: 14px; }
+    .parameter-group { background: var(--surface); border: 1px solid var(--line); }
+    .parameter-group summary {
+      cursor: pointer;
+      padding: 14px 16px;
+      font-weight: 800;
+      font-size: .9rem;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .parameter-group summary::-webkit-details-marker { display: none; }
+    .parameter-group summary::after { content: "+"; color: var(--teal); font: 600 1rem "IBM Plex Mono", monospace; }
+    .parameter-group[open] summary::after { content: "−"; }
+    .parameter-group summary span { color: var(--muted); font: 500 .72rem "IBM Plex Mono", monospace; }
+    .parameter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px 18px;
+      padding: 4px 16px 18px;
+      border-top: 1px solid var(--line);
+    }
+    .parameter-control { min-width: 0; padding-top: 12px; }
+    .parameter-control label { display: flex; justify-content: space-between; gap: 8px; font-size: .76rem; font-weight: 700; margin-bottom: 4px; }
+    .parameter-control output { color: var(--teal); font: 600 .72rem "IBM Plex Mono", monospace; }
+    .output-readout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: var(--ink);
+      color: var(--surface);
+    }
+    .output-readout span { color: #bcc8c2; font-size: .78rem; }
+    .output-readout strong { font: 600 1.3rem "IBM Plex Mono", monospace; text-align: right; }
+    @media (prefers-color-scheme: dark) { .output-readout { background: #080d0a; color: var(--ink); } }
+    .node .symbol { font-size: 13px; font-weight: 600; text-anchor: middle; }
+    .node .number { font-size: 11px; font-weight: 500; text-anchor: middle; fill: var(--teal); }
+    .weight-chip { cursor: pointer; }
+    .weight-chip:hover .weight-label { stroke: var(--teal); stroke-width: 2; }
+    .bias-box { fill: var(--yellow); stroke: var(--ink); stroke-width: 1; }
+    .bias-value { fill: #16221f; font: 600 9px "IBM Plex Mono", monospace; text-anchor: middle; dominant-baseline: middle; }
+
     .layers { margin-top: 66px; }
     .section-head { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: end; margin-bottom: 26px; }
     .section-head h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.02; letter-spacing: -.05em; }
@@ -222,6 +304,10 @@
       .info-panel { padding: 24px 20px; }
       .recap-grid { grid-template-columns: 1fr; }
       .neuron-result { grid-template-columns: 1fr; }
+      .architecture-controls { grid-template-columns: 1fr; }
+      .parameter-head { align-items: flex-start; flex-direction: column; }
+      .parameter-count { text-align: left; }
+      .parameter-grid { grid-template-columns: 1fr; }
       .layer-step { padding: 20px 18px 24px; }
       .layer-number { font-size: 3rem; }
     }
@@ -262,59 +348,21 @@
       </nav>
       <div class="stage">
         <div class="network-wrap">
-          <svg id="network" viewBox="0 0 920 500" role="img" aria-labelledby="network-title network-desc">
-            <title id="network-title">A feedforward neural network</title>
-            <desc id="network-desc">Two input nodes connect through two hidden layers to one output node. Connection color shows positive or negative weights and yellow dots show bias.</desc>
-
-            <g data-concept="weights" class="edge positive heavy"><path d="M90 183 C175 183 205 125 300 125" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M90 183 C180 183 205 250 300 250" fill="none"/></g>
-            <g data-concept="weights" class="edge positive"><path d="M90 183 C175 190 205 375 300 375" fill="none"/></g>
-            <g data-concept="weights" class="edge negative heavy"><path d="M90 317 C180 300 210 125 300 125" fill="none"/></g>
-            <g data-concept="weights" class="edge positive"><path d="M90 317 C180 317 205 250 300 250" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M90 317 C185 317 210 375 300 375" fill="none"/></g>
-            <g data-concept="weights" class="edge positive"><path d="M350 125 C430 125 475 188 560 188" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M350 125 C435 125 475 312 560 312" fill="none"/></g>
-            <g data-concept="weights" class="edge positive heavy"><path d="M350 250 C435 250 475 188 560 188" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M350 250 C435 250 475 312 560 312" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M350 375 C435 375 475 188 560 188" fill="none"/></g>
-            <g data-concept="weights" class="edge positive"><path d="M350 375 C435 375 475 312 560 312" fill="none"/></g>
-            <g data-concept="weights" class="edge positive heavy"><path d="M610 188 C700 188 735 250 825 250" fill="none"/></g>
-            <g data-concept="weights" class="edge negative"><path d="M610 312 C700 312 735 250 825 250" fill="none"/></g>
-
-            <g data-concept="weights" transform="translate(195 148)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+0.8</text></g>
-            <g data-concept="weights" transform="translate(195 338)"><rect class="weight-label" x="-24" y="-12" width="48" height="24" rx="5"/><text class="weight-text">−1.2</text></g>
-            <g data-concept="weights" transform="translate(460 218)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+1.6</text></g>
-            <g data-concept="weights" transform="translate(720 219)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+1.4</text></g>
-
-            <g data-concept="inputs" class="node" transform="translate(65 183)"><circle r="25"/><text class="value">x₁</text></g>
-            <g data-concept="inputs" class="node" transform="translate(65 317)"><circle r="25"/><text class="value">x₂</text></g>
-
-            <g data-concept="nodes" class="node" transform="translate(325 125)"><circle r="25"/><text class="value">h₁</text></g>
-            <g data-concept="nodes" class="node" transform="translate(325 250)"><circle r="25"/><text class="value">h₂</text></g>
-            <g data-concept="nodes" class="node" transform="translate(325 375)"><circle r="25"/><text class="value">h₃</text></g>
-            <g data-concept="nodes" class="node" transform="translate(585 188)"><circle r="25"/><text class="value">h₄</text></g>
-            <g data-concept="nodes" class="node" transform="translate(585 312)"><circle r="25"/><text class="value">h₅</text></g>
-
-            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="107" r="10"/><text class="bias-text" x="342" y="107">b</text></g>
-            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="232" r="10"/><text class="bias-text" x="342" y="232">b</text></g>
-            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="357" r="10"/><text class="bias-text" x="342" y="357">b</text></g>
-            <g data-concept="bias"><circle class="bias-dot" cx="602" cy="170" r="10"/><text class="bias-text" x="602" y="170">b</text></g>
-            <g data-concept="bias"><circle class="bias-dot" cx="602" cy="294" r="10"/><text class="bias-text" x="602" y="294">b</text></g>
-            <g data-concept="bias"><circle class="bias-dot" cx="858" cy="232" r="10"/><text class="bias-text" x="858" y="232">b</text></g>
-
-            <g data-concept="outputs" class="node" transform="translate(850 250)"><circle r="31"/><text class="value">ŷ</text></g>
-
-            <g data-concept="layers">
-              <text class="layer-label" x="65" y="462">Input layer</text>
-              <text class="layer-label" x="325" y="462">Hidden layer 1</text>
-              <text class="layer-label" x="585" y="462">Hidden layer 2</text>
-              <text class="layer-label" x="850" y="462">Output layer</text>
-              <path d="M35 435 H875" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 6"/>
-            </g>
-            <circle class="signal s1" r="5" aria-hidden="true"/>
-            <circle class="signal s2" r="5" aria-hidden="true"/>
-            <circle class="signal s3" r="5" aria-hidden="true"/>
-          </svg>
+          <svg id="network" viewBox="0 0 1000 520" role="img" aria-labelledby="network-title network-desc"></svg>
+          <div class="architecture-controls" aria-label="Network architecture controls">
+            <div class="architecture-control">
+              <span>Input nodes</span>
+              <button type="button" data-architecture="remove-input" aria-label="Remove an input">−</button>
+              <button type="button" data-architecture="add-input" aria-label="Add an input">+</button>
+              <div class="architecture-value" id="input-count">2 inputs</div>
+            </div>
+            <div class="architecture-control">
+              <span>Hidden layers</span>
+              <button type="button" data-architecture="remove-layer" aria-label="Remove a hidden layer">−</button>
+              <button type="button" data-architecture="add-layer" aria-label="Add a hidden layer">+</button>
+              <div class="architecture-value" id="layer-count">2 hidden layers</div>
+            </div>
+          </div>
         </div>
         <aside class="info-panel" aria-live="polite">
           <span class="info-index" id="info-index">THE BIG PICTURE</span>
@@ -322,6 +370,20 @@
           <p id="info-copy">Each layer receives numbers from the layer before it, transforms them, and sends new numbers onward. “Deep” means there are multiple hidden layers in this chain.</p>
           <div class="look-for"><b>Look for</b><span id="look-copy">Signals move left to right; learning changes the connections, not the overall route.</span></div>
         </aside>
+      </div>
+      <div class="parameter-lab" aria-labelledby="parameter-title">
+        <div class="parameter-head">
+          <div>
+            <h3 id="parameter-title">Control the whole network</h3>
+            <p>Every number drawn above has a control here. Change an input, weight, or bias and all node values—including the output—recalculate immediately.</p>
+          </div>
+          <div class="parameter-count" id="parameter-count" aria-live="polite"></div>
+        </div>
+        <div class="parameter-groups" id="parameter-groups"></div>
+        <div class="output-readout" aria-live="polite">
+          <span>Computed network output, ŷ</span>
+          <strong id="network-output">0.00</strong>
+        </div>
       </div>
     </section>
 
@@ -411,85 +473,315 @@
           index: 'THE BIG PICTURE',
           title: 'Information flows forward.',
           copy: 'Each layer receives numbers from the layer before it, transforms them, and sends new numbers onward. “Deep” means there are multiple hidden layers in this chain.',
-          look: 'Signals move left to right; learning changes the connections, not the overall route.'
+          look: 'Change any control below and follow the recalculated values from left to right.'
         },
         inputs: {
           index: '01 · INPUTS',
           title: 'Data enters as numbers.',
           copy: 'An input node holds one feature value. For an image, these might begin as pixel values; for language, they are coordinates in token-embedding vectors.',
-          look: 'The x₁ and x₂ circles at the far left. A real network may receive thousands of input values.'
+          look: 'Each x-node now shows its current numeric value. Add up to four inputs with the controls under the diagram.'
         },
         weights: {
           index: '02 · WEIGHTS',
-          title: 'Connections have influence.',
+          title: 'Every connection has influence.',
           copy: 'Every connection multiplies its incoming value by a learned weight. Positive weights reinforce a signal; negative weights push against it. Larger magnitude means stronger influence.',
-          look: 'Teal and orange lines. Their thickness shows the magnitude of a weight.'
+          look: 'Every line has a numeric label. Select a label or use the weight controls below to change it.'
         },
         nodes: {
           index: '03 · NODES',
           title: 'A node transforms numbers.',
-          copy: 'Each node collects weighted inputs, adds a bias, and applies a nonlinear activation. Without that nonlinearity, stacked layers would collapse into one linear transformation.',
-          look: 'The h-nodes inside the hidden layers. Each produces one new number.'
+          copy: 'Each hidden node collects weighted inputs, adds its bias, and applies ReLU. Without that nonlinearity, stacked layers would collapse into one linear transformation.',
+          look: 'Each h-node displays the activation it sends to the next layer.'
         },
         bias: {
           index: '04 · BIAS',
           title: 'Bias shifts the threshold.',
           copy: 'A bias is an extra learned number added inside a node. It lets the neuron activate even when every input is zero—and controls where its response begins.',
-          look: 'The small yellow b attached to each computing node.'
+          look: 'The yellow badge beside every hidden and output node shows that node’s bias value.'
         },
         layers: {
           index: '05 · LAYERS',
           title: 'Depth builds abstractions.',
           copy: 'A layer is a group of nodes at the same stage. Hidden layers transform the original inputs into internal representations that become progressively useful for the task.',
-          look: 'The vertical groups. “Hidden” means their values are internal—not that they are mysterious.'
+          look: 'Use the layer controls to explore networks with one to four hidden layers.'
         },
         outputs: {
           index: '06 · OUTPUT',
           title: 'The answer is still a number.',
-          copy: 'The output layer converts the final hidden representation into the form the task needs: a class score, probability, predicted value, or next-token score.',
-          look: 'The ŷ node at the far right. The hat means “predicted y.”'
+          copy: 'This demo uses ReLU in hidden nodes and a linear output node. The final number changes whenever any upstream input, weight, or bias changes.',
+          look: 'The ŷ node and readout below both show the computed output.'
         }
       };
 
+      var state = {
+        inputs: [0.7, -0.4],
+        hidden: [3, 2],
+        weights: [
+          [[0.8, -1.2], [-0.5, 0.6], [0.3, -0.7]],
+          [[0.4, 1.6, -0.9], [-0.8, 0.5, 0.7]],
+          [[1.4, -0.6]]
+        ],
+        biases: [[0.2, -0.1, 0.3], [-0.2, 0.1], [0.2]]
+      };
+
+      var weightSeeds = [0.8, -1.2, -0.5, 0.6, 0.3, -0.7, 0.4, 1.1, -0.9, -0.8, 0.5, 0.7, 1.4, -0.6, 0.2, -0.4];
+      var seedIndex = 0;
       var network = document.getElementById('network');
       var buttons = document.querySelectorAll('.concept-nav button');
-      function focusConcept(name) {
-        buttons.forEach(function (button) { button.classList.toggle('active', button.dataset.focus === name); });
-        network.classList.toggle('focused', name !== 'all');
+      var parameterGroups = document.getElementById('parameter-groups');
+      var currentFocus = 'all';
+
+      function nextWeight() {
+        var value = weightSeeds[seedIndex % weightSeeds.length];
+        seedIndex += 1;
+        return value;
+      }
+      function matrix(rows, columns) {
+        var result = [];
+        for (var r = 0; r < rows; r += 1) {
+          var row = [];
+          for (var c = 0; c < columns; c += 1) row.push(nextWeight());
+          result.push(row);
+        }
+        return result;
+      }
+      function formatOne(n) {
+        var value = Math.abs(n) < .001 ? 0 : n;
+        return value < 0 ? '−' + Math.abs(value).toFixed(1) : value.toFixed(1);
+      }
+      function formatSigned(n) {
+        var value = Math.abs(n) < .001 ? 0 : n;
+        return (value < 0 ? '−' : '+') + Math.abs(value).toFixed(1);
+      }
+      function formatTwo(n) {
+        var value = Math.abs(n) < .005 ? 0 : n;
+        return value.toFixed(2).replace('-', '−');
+      }
+      function computeNetwork() {
+        var values = [state.inputs.slice()];
+        var previous = state.inputs.slice();
+        for (var layer = 0; layer < state.hidden.length; layer += 1) {
+          var next = state.weights[layer].map(function (row, node) {
+            var z = state.biases[layer][node];
+            row.forEach(function (weight, source) { z += weight * previous[source]; });
+            return Math.max(0, z);
+          });
+          values.push(next);
+          previous = next;
+        }
+        var outputLayer = state.hidden.length;
+        var output = state.biases[outputLayer][0];
+        state.weights[outputLayer][0].forEach(function (weight, source) { output += weight * previous[source]; });
+        values.push([output]);
+        return { values: values, output: output };
+      }
+      function positions(count) {
+        if (count === 1) return [235];
+        var top = count > 3 ? 62 : 82;
+        var bottom = count > 3 ? 408 : 388;
+        var list = [];
+        for (var i = 0; i < count; i += 1) list.push(top + (bottom - top) * i / (count - 1));
+        return list;
+      }
+      function applyFocus() {
+        network.classList.toggle('focused', currentFocus !== 'all');
         network.querySelectorAll('[data-concept]').forEach(function (item) {
           item.classList.remove('is-focus', 'is-context');
-          if (name !== 'all' && item.dataset.concept === name) item.classList.add('is-focus');
-          else if (name !== 'all' && (item.dataset.concept === 'layers' || item.dataset.concept === 'nodes')) item.classList.add('is-context');
+          if (currentFocus !== 'all' && item.dataset.concept === currentFocus) item.classList.add('is-focus');
+          else if (currentFocus !== 'all' && (item.dataset.concept === 'layers' || item.dataset.concept === 'nodes')) item.classList.add('is-context');
         });
+      }
+      function renderNetwork() {
+        var result = computeNetwork();
+        var counts = [state.inputs.length].concat(state.hidden).concat([1]);
+        var columnCount = counts.length;
+        var xs = [];
+        var ys = [];
+        for (var column = 0; column < columnCount; column += 1) {
+          xs.push(68 + column * (864 / (columnCount - 1)));
+          ys.push(positions(counts[column]));
+        }
+        var parts = [
+          '<title id="network-title">An adjustable feedforward neural network</title>',
+          '<desc id="network-desc">' + state.inputs.length + ' inputs connect through ' + state.hidden.length + ' hidden layers to one computed output. Every connection, bias, and node shows its current number.</desc>'
+        ];
+
+        state.weights.forEach(function (layerWeights, layer) {
+          layerWeights.forEach(function (row, destination) {
+            row.forEach(function (weight, source) {
+              var x1 = xs[layer] + 29;
+              var y1 = ys[layer][source];
+              var x2 = xs[layer + 1] - 29;
+              var y2 = ys[layer + 1][destination];
+              var bend = (x2 - x1) * .43;
+              var labelT = .46 + (((source + destination) % 3) - 1) * .045;
+              var labelX = x1 + (x2 - x1) * labelT;
+              var labelY = y1 + (y2 - y1) * labelT + ((source + destination) % 2 ? -8 : 8);
+              var polarity = weight >= 0 ? 'positive' : 'negative';
+              var width = Math.min(5.5, 1.4 + Math.abs(weight) * 1.55);
+              var targetId = 'weight-' + layer + '-' + destination + '-' + source;
+              parts.push('<path data-concept="weights" class="edge ' + polarity + '" style="stroke-width:' + width + '" d="M' + x1 + ' ' + y1 + ' C' + (x1 + bend) + ' ' + y1 + ' ' + (x2 - bend) + ' ' + y2 + ' ' + x2 + ' ' + y2 + '" fill="none"/>');
+              parts.push('<g data-concept="weights" class="weight-chip" data-control-target="' + targetId + '" transform="translate(' + labelX.toFixed(1) + ' ' + labelY.toFixed(1) + ')"><rect class="weight-label" x="-19" y="-9" width="38" height="18" rx="4"/><text class="weight-text" style="font-size:9px">' + formatSigned(weight) + '</text></g>');
+            });
+          });
+        });
+
+        counts.forEach(function (count, column) {
+          var concept = column === 0 ? 'inputs' : (column === columnCount - 1 ? 'outputs' : 'nodes');
+          for (var node = 0; node < count; node += 1) {
+            var symbol = column === 0 ? 'x' + (node + 1) : (column === columnCount - 1 ? 'ŷ' : 'h' + column + ',' + (node + 1));
+            var number = result.values[column][node];
+            var radius = column === columnCount - 1 ? 33 : 27;
+            parts.push('<g data-concept="' + concept + '" class="node" transform="translate(' + xs[column] + ' ' + ys[column][node] + ')"><circle r="' + radius + '"/><text class="symbol" y="-5">' + symbol + '</text><text class="number" y="12">' + formatTwo(number) + '</text></g>');
+            if (column > 0) {
+              var bias = state.biases[column - 1][node];
+              parts.push('<g data-concept="bias" transform="translate(' + (xs[column] + 27) + ' ' + (ys[column][node] - 27) + ')"><rect class="bias-box" x="-25" y="-9" width="50" height="18" rx="5"/><text class="bias-value">b=' + formatSigned(bias) + '</text></g>');
+            }
+          }
+        });
+
+        var labels = ['Input'];
+        state.hidden.forEach(function (_, index) { labels.push('Hidden ' + (index + 1)); });
+        labels.push('Output');
+        parts.push('<g data-concept="layers"><path d="M35 458 H965" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 6"/>');
+        labels.forEach(function (label, index) { parts.push('<text class="layer-label" x="' + xs[index] + '" y="490">' + label + '</text>'); });
+        parts.push('</g>');
+        network.innerHTML = parts.join('');
+        document.getElementById('network-output').textContent = formatTwo(result.output);
+        applyFocus();
+      }
+
+      function parameterControl(id, label, value) {
+        return '<div class="parameter-control"><label for="' + id + '"><span>' + label + '</span><output>' + formatOne(value) + '</output></label><input id="' + id + '" data-param="' + id + '" type="range" min="-2" max="2" step="0.1" value="' + value + '"></div>';
+      }
+      function layerName(index) {
+        return index < state.hidden.length ? 'Hidden ' + (index + 1) : 'Output';
+      }
+      function renderParameters() {
+        var html = [];
+        var inputControls = state.inputs.map(function (value, index) {
+          return parameterControl('input-' + index, 'Input x' + (index + 1), value);
+        }).join('');
+        html.push('<details class="parameter-group" open><summary>Input values <span>' + state.inputs.length + ' controls</span></summary><div class="parameter-grid">' + inputControls + '</div></details>');
+
+        var biasControls = [];
+        var biasCount = 0;
+        state.biases.forEach(function (layerBiases, layer) {
+          layerBiases.forEach(function (value, node) {
+            biasCount += 1;
+            var label = layerName(layer) + (layer < state.hidden.length ? ' · b' + (node + 1) : ' · b');
+            biasControls.push(parameterControl('bias-' + layer + '-' + node, label, value));
+          });
+        });
+        html.push('<details class="parameter-group" open><summary>Bias values <span>' + biasCount + ' controls</span></summary><div class="parameter-grid">' + biasControls.join('') + '</div></details>');
+
+        var weightCount = 0;
+        state.weights.forEach(function (layerWeights, layer) {
+          var controls = [];
+          var destinationName = layerName(layer);
+          var sourceName = layer === 0 ? 'x' : 'h' + layer;
+          layerWeights.forEach(function (row, destination) {
+            row.forEach(function (value, source) {
+              weightCount += 1;
+              var target = layer === state.hidden.length ? 'ŷ' : destinationName + ' n' + (destination + 1);
+              controls.push(parameterControl('weight-' + layer + '-' + destination + '-' + source, target + ' ← ' + sourceName + (source + 1), value));
+            });
+          });
+          var pairName = (layer === 0 ? 'Inputs' : 'Hidden ' + layer) + ' → ' + destinationName;
+          html.push('<details class="parameter-group" open><summary>' + pairName + ' weights <span>' + controls.length + ' controls</span></summary><div class="parameter-grid">' + controls.join('') + '</div></details>');
+        });
+        parameterGroups.innerHTML = html.join('');
+        document.getElementById('parameter-count').textContent = weightCount + ' weights · ' + biasCount + ' biases · ' + state.inputs.length + ' inputs';
+        document.getElementById('input-count').textContent = state.inputs.length + (state.inputs.length === 1 ? ' input' : ' inputs');
+        document.getElementById('layer-count').textContent = state.hidden.length + (state.hidden.length === 1 ? ' hidden layer' : ' hidden layers');
+        document.querySelector('[data-architecture="remove-input"]').disabled = state.inputs.length <= 1;
+        document.querySelector('[data-architecture="add-input"]').disabled = state.inputs.length >= 4;
+        document.querySelector('[data-architecture="remove-layer"]').disabled = state.hidden.length <= 1;
+        document.querySelector('[data-architecture="add-layer"]').disabled = state.hidden.length >= 4;
+      }
+      function renderAll() {
+        renderParameters();
+        renderNetwork();
+      }
+      function focusConcept(name) {
+        currentFocus = name;
+        buttons.forEach(function (button) { button.classList.toggle('active', button.dataset.focus === name); });
         var c = concepts[name];
         document.getElementById('info-index').textContent = c.index;
         document.getElementById('info-title').textContent = c.title;
         document.getElementById('info-copy').textContent = c.copy;
         document.getElementById('look-copy').textContent = c.look;
+        applyFocus();
       }
+
       buttons.forEach(function (button) {
         button.addEventListener('click', function () { focusConcept(button.dataset.focus); });
       });
+      parameterGroups.addEventListener('input', function (event) {
+        if (!event.target.matches('input[data-param]')) return;
+        var pieces = event.target.dataset.param.split('-');
+        var value = parseFloat(event.target.value);
+        if (pieces[0] === 'input') state.inputs[parseInt(pieces[1], 10)] = value;
+        if (pieces[0] === 'bias') state.biases[parseInt(pieces[1], 10)][parseInt(pieces[2], 10)] = value;
+        if (pieces[0] === 'weight') state.weights[parseInt(pieces[1], 10)][parseInt(pieces[2], 10)][parseInt(pieces[3], 10)] = value;
+        event.target.parentElement.querySelector('output').textContent = formatOne(value);
+        renderNetwork();
+      });
+      network.addEventListener('click', function (event) {
+        var chip = event.target.closest('[data-control-target]');
+        if (!chip) return;
+        var control = document.getElementById(chip.dataset.controlTarget);
+        if (control) {
+          control.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          control.focus({ preventScroll: true });
+        }
+      });
+      document.querySelectorAll('[data-architecture]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var action = button.dataset.architecture;
+          if (action === 'add-input' && state.inputs.length < 4) {
+            state.inputs.push(0.2);
+            state.weights[0].forEach(function (row) { row.push(nextWeight()); });
+          }
+          if (action === 'remove-input' && state.inputs.length > 1) {
+            state.inputs.pop();
+            state.weights[0].forEach(function (row) { row.pop(); });
+          }
+          if (action === 'add-layer' && state.hidden.length < 4) {
+            state.weights.pop();
+            var previousSize = state.hidden[state.hidden.length - 1];
+            state.hidden.push(3);
+            state.weights.push(matrix(3, previousSize));
+            state.weights.push(matrix(1, 3));
+            state.biases.splice(state.biases.length - 1, 0, [0.1, -0.2, 0.3]);
+          }
+          if (action === 'remove-layer' && state.hidden.length > 1) {
+            state.weights.pop();
+            state.weights.pop();
+            state.hidden.pop();
+            state.weights.push(matrix(1, state.hidden[state.hidden.length - 1]));
+            state.biases.splice(state.biases.length - 2, 1);
+          }
+          renderAll();
+        });
+      });
 
       var ids = ['x1', 'w1', 'x2', 'w2', 'bias'];
-      function format(n) {
-        var value = Math.abs(n) < .001 ? 0 : n;
-        return value < 0 ? '−' + Math.abs(value).toFixed(1) : value.toFixed(1);
-      }
-      function calculate() {
+      function calculateNeuron() {
         var v = {};
         ids.forEach(function (id) {
           v[id] = parseFloat(document.getElementById(id).value);
-          document.getElementById(id + 'v').textContent = format(v[id]);
+          document.getElementById(id + 'v').textContent = formatOne(v[id]);
         });
         var z = v.x1 * v.w1 + v.x2 * v.w2 + v.bias;
         var relu = Math.max(0, z);
-        document.getElementById('z-value').textContent = z.toFixed(2).replace('-', '−');
-        document.getElementById('relu-value').textContent = relu.toFixed(2);
+        document.getElementById('z-value').textContent = formatTwo(z);
+        document.getElementById('relu-value').textContent = formatTwo(relu);
         document.getElementById('activation-fill').style.width = Math.min(100, relu / 4 * 100) + '%';
       }
-      ids.forEach(function (id) { document.getElementById(id).addEventListener('input', calculate); });
-      calculate();
+      ids.forEach(function (id) { document.getElementById(id).addEventListener('input', calculateNeuron); });
+      renderAll();
+      calculateNeuron();
     })();
   </script>
 </body>
