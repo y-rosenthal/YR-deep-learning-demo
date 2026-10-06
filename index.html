@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Inside a Deep Learning Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f3;
+      --surface: #ffffff;
+      --surface-2: #e9ece6;
+      --ink: #16221f;
+      --muted: #52625d;
+      --line: #cbd2cc;
+      --teal: #087f73;
+      --teal-soft: #d8eee9;
+      --orange: #da5b2a;
+      --orange-soft: #f7ded3;
+      --yellow: #e9b949;
+      --navy: #163f63;
+      --shadow: 0 18px 50px rgba(27, 44, 38, .10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101713;
+        --surface: #18231e;
+        --surface-2: #22302a;
+        --ink: #eef5f0;
+        --muted: #afbeb7;
+        --line: #3b4c44;
+        --teal: #65d1c4;
+        --teal-soft: #163f39;
+        --orange: #ff8654;
+        --orange-soft: #4d2c21;
+        --yellow: #f3c65c;
+        --navy: #8fc2e9;
+        --shadow: 0 18px 50px rgba(0, 0, 0, .28);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        var(--bg);
+      background-size: 40px 40px;
+      color: var(--ink);
+      font-family: "Manrope", sans-serif;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .page { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 72px; }
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
+      gap: 36px;
+      align-items: end;
+      padding: 48px 0 42px;
+    }
+    .lesson-label {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--teal);
+      font: 600 .78rem/1 "IBM Plex Mono", monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    .lesson-label::before { content: ""; width: 28px; height: 3px; background: var(--orange); }
+    h1 { font-size: clamp(2.55rem, 7vw, 5.6rem); line-height: .98; letter-spacing: -.065em; margin: 0; max-width: 820px; }
+    h1 em { color: var(--teal); font-style: normal; }
+    .intro-copy { margin: 0 0 6px; color: var(--muted); font-size: clamp(1rem, 2vw, 1.2rem); }
+    .intro-copy strong { color: var(--ink); }
+    .board {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .board-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .board-top h2 { margin: 0; font-size: 1.16rem; letter-spacing: -.02em; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: .78rem; }
+    .legend span { display: flex; gap: 6px; align-items: center; }
+    .swatch { width: 24px; height: 3px; display: inline-block; border-radius: 4px; }
+    .swatch.pos { background: var(--teal); }
+    .swatch.neg { background: var(--orange); }
+    .concept-nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
+    .concept-nav button {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 700;
+      transition: background .16s, color .16s, border-color .16s;
+    }
+    .concept-nav button:hover { border-color: var(--teal); }
+    .concept-nav button.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+    .stage { display: grid; grid-template-columns: minmax(0, 1fr) 280px; min-height: 500px; }
+    .network-wrap { padding: 22px 16px 18px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    #network { width: 100%; height: auto; display: block; }
+    .info-panel { padding: 30px 26px; background: var(--surface-2); border-left: 1px solid var(--line); }
+    .info-index { font: 600 .74rem/1 "IBM Plex Mono", monospace; color: var(--orange); letter-spacing: .08em; }
+    .info-panel h3 { font-size: 1.75rem; line-height: 1.06; margin: 13px 0; letter-spacing: -.04em; }
+    .info-panel p { color: var(--muted); margin: 0; font-size: .94rem; }
+    .look-for { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
+    .look-for b { display: block; font: 600 .72rem/1.2 "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; color: var(--ink); }
+    .look-for span { font-size: .85rem; color: var(--muted); }
+
+    /* SVG */
+    .edge { stroke: var(--line); stroke-width: 2; opacity: .48; transition: opacity .2s, stroke-width .2s, stroke .2s; }
+    .edge.positive { stroke: var(--teal); }
+    .edge.negative { stroke: var(--orange); }
+    .edge.heavy { stroke-width: 5; }
+    .node circle { fill: var(--surface); stroke: var(--ink); stroke-width: 2.3; transition: opacity .2s, stroke-width .2s, fill .2s; }
+    .node text, .svg-label { fill: var(--ink); font-family: "IBM Plex Mono", monospace; }
+    .node .value { font-size: 17px; font-weight: 600; text-anchor: middle; dominant-baseline: middle; }
+    .bias-dot { fill: var(--yellow); stroke: var(--ink); stroke-width: 1.5; }
+    .bias-text { fill: #16221f; font: 600 12px "IBM Plex Mono", monospace; text-anchor: middle; dominant-baseline: middle; }
+    .layer-label { fill: var(--muted); font: 600 12px "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; text-anchor: middle; }
+    .weight-label { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+    .weight-text { fill: var(--ink); font: 600 11px "IBM Plex Mono", monospace; text-anchor: middle; dominant-baseline: middle; }
+    .signal { fill: var(--teal); filter: drop-shadow(0 0 4px var(--teal)); }
+    [data-concept] { transition: opacity .18s; }
+    #network.focused [data-concept] { opacity: .15; }
+    #network.focused [data-concept].is-focus { opacity: 1; }
+    #network.focused .is-context { opacity: .36; }
+    #network .is-focus.edge { stroke-width: 7; }
+    #network .is-focus.node circle { stroke-width: 5; fill: var(--teal-soft); }
+    #network .is-focus.bias-dot { transform-box: fill-box; transform-origin: center; transform: scale(1.45); }
+    @keyframes travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+    .signal.s1 { offset-path: path("M90 183 C175 183 205 125 300 125"); animation: travel 2.8s linear infinite; }
+    .signal.s2 { offset-path: path("M350 125 C430 125 475 188 560 188"); animation: travel 2.8s .9s linear infinite; }
+    .signal.s3 { offset-path: path("M610 188 C700 188 735 250 825 250"); animation: travel 2.8s 1.8s linear infinite; }
+
+    .workbench { margin-top: 34px; display: grid; grid-template-columns: 1fr 1.1fr; background: var(--ink); color: var(--surface); }
+    @media (prefers-color-scheme: dark) { .workbench { color: var(--ink); background: #080d0a; } }
+    .equation-side { padding: clamp(26px, 5vw, 52px); display: flex; flex-direction: column; justify-content: center; }
+    .equation-side h2 { font-size: clamp(1.8rem, 4vw, 3.2rem); line-height: 1.06; letter-spacing: -.045em; margin: 0 0 15px; }
+    .equation-side > p { color: #bcc8c2; margin: 0 0 28px; max-width: 46ch; }
+    .equation {
+      font: 500 clamp(.92rem, 2vw, 1.25rem)/1.6 "IBM Plex Mono", monospace;
+      background: #0d1712;
+      border: 1px solid #425149;
+      padding: 18px;
+      overflow-wrap: anywhere;
+    }
+    .equation .w { color: #6ee3d5; }
+    .equation .b { color: #f2c85b; }
+    .equation .r { color: #ff9568; }
+    .controls { background: var(--surface); color: var(--ink); padding: clamp(25px, 5vw, 48px); }
+    .control + .control { margin-top: 19px; }
+    .control-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 7px; }
+    .control-head label { font-weight: 700; font-size: .9rem; }
+    .control-head output { font: 600 .82rem "IBM Plex Mono", monospace; color: var(--teal); }
+    input[type="range"] { width: 100%; accent-color: var(--teal); }
+    .neuron-result { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); margin-top: 26px; border: 1px solid var(--line); }
+    .result-cell { background: var(--surface-2); padding: 17px; }
+    .result-cell span { display: block; color: var(--muted); font-size: .75rem; margin-bottom: 4px; }
+    .result-cell strong { font: 600 1.35rem "IBM Plex Mono", monospace; }
+    .activation-bar { height: 8px; background: var(--line); margin-top: 20px; overflow: hidden; }
+    .activation-fill { height: 100%; width: 0; background: var(--orange); transition: width .2s; }
+
+    .layers { margin-top: 66px; }
+    .section-head { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: end; margin-bottom: 26px; }
+    .section-head h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.02; letter-spacing: -.05em; }
+    .section-head p { margin: 0; color: var(--muted); }
+    .layer-story { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+    .layer-step { padding: 26px 25px 30px; min-height: 240px; position: relative; }
+    .layer-step + .layer-step { border-left: 1px solid var(--line); }
+    .layer-number { font: 600 4rem/.85 "IBM Plex Mono", monospace; color: var(--surface-2); position: absolute; right: 16px; top: 22px; }
+    .layer-step h3 { margin: 54px 0 10px; font-size: 1.2rem; }
+    .layer-step p { margin: 0; color: var(--muted); font-size: .9rem; }
+    .example { display: inline-block; margin-top: 17px; font: 500 .75rem "IBM Plex Mono", monospace; color: var(--teal); }
+    .recap { margin-top: 64px; background: var(--orange-soft); border: 1px solid color-mix(in srgb, var(--orange) 30%, var(--line)); padding: clamp(26px, 4vw, 42px); }
+    .recap h2 { margin: 0 0 22px; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .recap-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 32px; }
+    .recap-item { display: grid; grid-template-columns: 30px 1fr; gap: 12px; padding: 15px 0; border-top: 1px solid color-mix(in srgb, var(--orange) 30%, transparent); }
+    .recap-item b:first-child { color: var(--orange); font-family: "IBM Plex Mono", monospace; }
+    .recap-item strong { display: block; margin-bottom: 3px; }
+    .recap-item span { color: var(--muted); font-size: .88rem; }
+    footer { padding: 26px 0 0; color: var(--muted); font-size: .78rem; font-family: "IBM Plex Mono", monospace; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+    @media (max-width: 860px) {
+      .intro, .section-head { grid-template-columns: 1fr; }
+      .intro { gap: 18px; padding-top: 26px; }
+      .stage { grid-template-columns: 1fr; }
+      .info-panel { border-left: 0; border-top: 1px solid var(--line); min-height: 220px; }
+      .network-wrap { padding: 8px; }
+      .workbench { grid-template-columns: 1fr; }
+      .layer-story { grid-template-columns: 1fr; }
+      .layer-step { min-height: 0; }
+      .layer-step + .layer-step { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 560px) {
+      .page { width: min(100% - 20px, 1180px); padding-top: 10px; }
+      h1 { font-size: clamp(2.65rem, 15vw, 4.2rem); }
+      .board-top { align-items: flex-start; flex-direction: column; }
+      .concept-nav { padding: 12px; }
+      .concept-nav button { flex: 1 1 calc(33% - 8px); padding: 8px 5px; }
+      .stage { min-height: 0; }
+      #network { min-height: 300px; }
+      .info-panel { padding: 24px 20px; }
+      .recap-grid { grid-template-columns: 1fr; }
+      .neuron-result { grid-template-columns: 1fr; }
+      .layer-step { padding: 20px 18px 24px; }
+      .layer-number { font-size: 3rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .signal { animation: none !important; display: none; }
+      * { transition-duration: 0s !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="intro">
+      <div>
+        <div class="lesson-label">Neural networks · visual lesson</div>
+        <h1>How a network turns <em>signals</em> into answers.</h1>
+      </div>
+      <p class="intro-copy"><strong>A deep learning network is a sequence of transformations.</strong> It receives numbers, adjusts their influence, combines them inside nodes, and passes the result forward through layers.</p>
+    </header>
+
+    <section class="board" aria-labelledby="map-title">
+      <div class="board-top">
+        <h2 id="map-title">Anatomy of a small network</h2>
+        <div class="legend" aria-label="Weight legend">
+          <span><i class="swatch pos"></i> positive weight</span>
+          <span><i class="swatch neg"></i> negative weight</span>
+          <span>thicker = stronger</span>
+        </div>
+      </div>
+      <nav class="concept-nav" aria-label="Explore network concepts">
+        <button class="active" data-focus="all">Whole network</button>
+        <button data-focus="inputs">Inputs</button>
+        <button data-focus="weights">Weights</button>
+        <button data-focus="nodes">Nodes</button>
+        <button data-focus="bias">Bias</button>
+        <button data-focus="layers">Layers</button>
+        <button data-focus="outputs">Output</button>
+      </nav>
+      <div class="stage">
+        <div class="network-wrap">
+          <svg id="network" viewBox="0 0 920 500" role="img" aria-labelledby="network-title network-desc">
+            <title id="network-title">A feedforward neural network</title>
+            <desc id="network-desc">Two input nodes connect through two hidden layers to one output node. Connection color shows positive or negative weights and yellow dots show bias.</desc>
+
+            <g data-concept="weights" class="edge positive heavy"><path d="M90 183 C175 183 205 125 300 125" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M90 183 C180 183 205 250 300 250" fill="none"/></g>
+            <g data-concept="weights" class="edge positive"><path d="M90 183 C175 190 205 375 300 375" fill="none"/></g>
+            <g data-concept="weights" class="edge negative heavy"><path d="M90 317 C180 300 210 125 300 125" fill="none"/></g>
+            <g data-concept="weights" class="edge positive"><path d="M90 317 C180 317 205 250 300 250" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M90 317 C185 317 210 375 300 375" fill="none"/></g>
+            <g data-concept="weights" class="edge positive"><path d="M350 125 C430 125 475 188 560 188" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M350 125 C435 125 475 312 560 312" fill="none"/></g>
+            <g data-concept="weights" class="edge positive heavy"><path d="M350 250 C435 250 475 188 560 188" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M350 250 C435 250 475 312 560 312" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M350 375 C435 375 475 188 560 188" fill="none"/></g>
+            <g data-concept="weights" class="edge positive"><path d="M350 375 C435 375 475 312 560 312" fill="none"/></g>
+            <g data-concept="weights" class="edge positive heavy"><path d="M610 188 C700 188 735 250 825 250" fill="none"/></g>
+            <g data-concept="weights" class="edge negative"><path d="M610 312 C700 312 735 250 825 250" fill="none"/></g>
+
+            <g data-concept="weights" transform="translate(195 148)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+0.8</text></g>
+            <g data-concept="weights" transform="translate(195 338)"><rect class="weight-label" x="-24" y="-12" width="48" height="24" rx="5"/><text class="weight-text">−1.2</text></g>
+            <g data-concept="weights" transform="translate(460 218)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+1.6</text></g>
+            <g data-concept="weights" transform="translate(720 219)"><rect class="weight-label" x="-22" y="-12" width="44" height="24" rx="5"/><text class="weight-text">+1.4</text></g>
+
+            <g data-concept="inputs" class="node" transform="translate(65 183)"><circle r="25"/><text class="value">x₁</text></g>
+            <g data-concept="inputs" class="node" transform="translate(65 317)"><circle r="25"/><text class="value">x₂</text></g>
+
+            <g data-concept="nodes" class="node" transform="translate(325 125)"><circle r="25"/><text class="value">h₁</text></g>
+            <g data-concept="nodes" class="node" transform="translate(325 250)"><circle r="25"/><text class="value">h₂</text></g>
+            <g data-concept="nodes" class="node" transform="translate(325 375)"><circle r="25"/><text class="value">h₃</text></g>
+            <g data-concept="nodes" class="node" transform="translate(585 188)"><circle r="25"/><text class="value">h₄</text></g>
+            <g data-concept="nodes" class="node" transform="translate(585 312)"><circle r="25"/><text class="value">h₅</text></g>
+
+            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="107" r="10"/><text class="bias-text" x="342" y="107">b</text></g>
+            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="232" r="10"/><text class="bias-text" x="342" y="232">b</text></g>
+            <g data-concept="bias"><circle class="bias-dot" cx="342" cy="357" r="10"/><text class="bias-text" x="342" y="357">b</text></g>
+            <g data-concept="bias"><circle class="bias-dot" cx="602" cy="170" r="10"/><text class="bias-text" x="602" y="170">b</text></g>
+            <g data-concept="bias"><circle class="bias-dot" cx="602" cy="294" r="10"/><text class="bias-text" x="602" y="294">b</text></g>
+            <g data-concept="bias"><circle class="bias-dot" cx="858" cy="232" r="10"/><text class="bias-text" x="858" y="232">b</text></g>
+
+            <g data-concept="outputs" class="node" transform="translate(850 250)"><circle r="31"/><text class="value">ŷ</text></g>
+
+            <g data-concept="layers">
+              <text class="layer-label" x="65" y="462">Input layer</text>
+              <text class="layer-label" x="325" y="462">Hidden layer 1</text>
+              <text class="layer-label" x="585" y="462">Hidden layer 2</text>
+              <text class="layer-label" x="850" y="462">Output layer</text>
+              <path d="M35 435 H875" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 6"/>
+            </g>
+            <circle class="signal s1" r="5" aria-hidden="true"/>
+            <circle class="signal s2" r="5" aria-hidden="true"/>
+            <circle class="signal s3" r="5" aria-hidden="true"/>
+          </svg>
+        </div>
+        <aside class="info-panel" aria-live="polite">
+          <span class="info-index" id="info-index">THE BIG PICTURE</span>
+          <h3 id="info-title">Information flows forward.</h3>
+          <p id="info-copy">Each layer receives numbers from the layer before it, transforms them, and sends new numbers onward. “Deep” means there are multiple hidden layers in this chain.</p>
+          <div class="look-for"><b>Look for</b><span id="look-copy">Signals move left to right; learning changes the connections, not the overall route.</span></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="workbench" aria-labelledby="neuron-title">
+      <div class="equation-side">
+        <h2 id="neuron-title">Watch one neuron compute.</h2>
+        <p>A neuron multiplies each input by a weight, adds a bias, then passes the total through an activation function.</p>
+        <div class="equation" aria-label="Neuron equation">
+          z = (<span class="w">x₁ × w₁</span>) + (<span class="w">x₂ × w₂</span>) + <span class="b">b</span><br>
+          output = <span class="r">ReLU(z)</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="control">
+          <div class="control-head"><label for="x1">Input x₁</label><output id="x1v">0.7</output></div>
+          <input id="x1" type="range" min="-2" max="2" value="0.7" step="0.1">
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="w1">Weight w₁</label><output id="w1v">1.2</output></div>
+          <input id="w1" type="range" min="-2" max="2" value="1.2" step="0.1">
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="x2">Input x₂</label><output id="x2v">−0.4</output></div>
+          <input id="x2" type="range" min="-2" max="2" value="-0.4" step="0.1">
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="w2">Weight w₂</label><output id="w2v">0.8</output></div>
+          <input id="w2" type="range" min="-2" max="2" value="0.8" step="0.1">
+        </div>
+        <div class="control">
+          <div class="control-head"><label for="bias">Bias b</label><output id="biasv">0.2</output></div>
+          <input id="bias" type="range" min="-2" max="2" value="0.2" step="0.1">
+        </div>
+        <div class="neuron-result" aria-live="polite">
+          <div class="result-cell"><span>Weighted sum, z</span><strong id="z-value">0.72</strong></div>
+          <div class="result-cell"><span>After ReLU</span><strong id="relu-value">0.72</strong></div>
+        </div>
+        <div class="activation-bar" aria-hidden="true"><div class="activation-fill" id="activation-fill"></div></div>
+      </div>
+    </section>
+
+    <section class="layers" aria-labelledby="layers-title">
+      <div class="section-head">
+        <h2 id="layers-title">Why multiple layers?</h2>
+        <p>Depth lets a network build complex ideas from simpler ones. Each layer can recombine patterns detected by earlier layers.</p>
+      </div>
+      <div class="layer-story">
+        <article class="layer-step">
+          <span class="layer-number">01</span>
+          <h3>Early layers detect parts</h3>
+          <p>They respond to small, local patterns in the raw input.</p>
+          <span class="example">image example → edges, colors</span>
+        </article>
+        <article class="layer-step">
+          <span class="layer-number">02</span>
+          <h3>Middle layers combine parts</h3>
+          <p>They assemble those patterns into more useful structures.</p>
+          <span class="example">edges → corners, textures</span>
+        </article>
+        <article class="layer-step">
+          <span class="layer-number">03</span>
+          <h3>Later layers support a decision</h3>
+          <p>They represent task-specific concepts used by the output.</p>
+          <span class="example">shapes → object category</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="recap" aria-labelledby="recap-title">
+      <h2 id="recap-title">The six ideas to remember</h2>
+      <div class="recap-grid">
+        <div class="recap-item"><b>01</b><div><strong>Inputs</strong><span>Numbers that represent the example being processed.</span></div></div>
+        <div class="recap-item"><b>02</b><div><strong>Weights</strong><span>Learned multipliers that control a connection’s influence.</span></div></div>
+        <div class="recap-item"><b>03</b><div><strong>Bias</strong><span>A learned offset that shifts when a neuron activates.</span></div></div>
+        <div class="recap-item"><b>04</b><div><strong>Nodes</strong><span>Small computation units: combine, shift, activate.</span></div></div>
+        <div class="recap-item"><b>05</b><div><strong>Layers</strong><span>Stages that build representations from simple to complex.</span></div></div>
+        <div class="recap-item"><b>06</b><div><strong>Outputs</strong><span>The network’s final scores, prediction, or generated values.</span></div></div>
+      </div>
+    </section>
+    <footer>Training repeatedly adjusts weights and biases to reduce the network’s error.</footer>
+  </main>
+
+  <script>
+    (function () {
+      var concepts = {
+        all: {
+          index: 'THE BIG PICTURE',
+          title: 'Information flows forward.',
+          copy: 'Each layer receives numbers from the layer before it, transforms them, and sends new numbers onward. “Deep” means there are multiple hidden layers in this chain.',
+          look: 'Signals move left to right; learning changes the connections, not the overall route.'
+        },
+        inputs: {
+          index: '01 · INPUTS',
+          title: 'Data enters as numbers.',
+          copy: 'An input node holds one feature value. For an image, these might begin as pixel values; for language, they are coordinates in token-embedding vectors.',
+          look: 'The x₁ and x₂ circles at the far left. A real network may receive thousands of input values.'
+        },
+        weights: {
+          index: '02 · WEIGHTS',
+          title: 'Connections have influence.',
+          copy: 'Every connection multiplies its incoming value by a learned weight. Positive weights reinforce a signal; negative weights push against it. Larger magnitude means stronger influence.',
+          look: 'Teal and orange lines. Their thickness shows the magnitude of a weight.'
+        },
+        nodes: {
+          index: '03 · NODES',
+          title: 'A node transforms numbers.',
+          copy: 'Each node collects weighted inputs, adds a bias, and applies a nonlinear activation. Without that nonlinearity, stacked layers would collapse into one linear transformation.',
+          look: 'The h-nodes inside the hidden layers. Each produces one new number.'
+        },
+        bias: {
+          index: '04 · BIAS',
+          title: 'Bias shifts the threshold.',
+          copy: 'A bias is an extra learned number added inside a node. It lets the neuron activate even when every input is zero—and controls where its response begins.',
+          look: 'The small yellow b attached to each computing node.'
+        },
+        layers: {
+          index: '05 · LAYERS',
+          title: 'Depth builds abstractions.',
+          copy: 'A layer is a group of nodes at the same stage. Hidden layers transform the original inputs into internal representations that become progressively useful for the task.',
+          look: 'The vertical groups. “Hidden” means their values are internal—not that they are mysterious.'
+        },
+        outputs: {
+          index: '06 · OUTPUT',
+          title: 'The answer is still a number.',
+          copy: 'The output layer converts the final hidden representation into the form the task needs: a class score, probability, predicted value, or next-token score.',
+          look: 'The ŷ node at the far right. The hat means “predicted y.”'
+        }
+      };
+
+      var network = document.getElementById('network');
+      var buttons = document.querySelectorAll('.concept-nav button');
+      function focusConcept(name) {
+        buttons.forEach(function (button) { button.classList.toggle('active', button.dataset.focus === name); });
+        network.classList.toggle('focused', name !== 'all');
+        network.querySelectorAll('[data-concept]').forEach(function (item) {
+          item.classList.remove('is-focus', 'is-context');
+          if (name !== 'all' && item.dataset.concept === name) item.classList.add('is-focus');
+          else if (name !== 'all' && (item.dataset.concept === 'layers' || item.dataset.concept === 'nodes')) item.classList.add('is-context');
+        });
+        var c = concepts[name];
+        document.getElementById('info-index').textContent = c.index;
+        document.getElementById('info-title').textContent = c.title;
+        document.getElementById('info-copy').textContent = c.copy;
+        document.getElementById('look-copy').textContent = c.look;
+      }
+      buttons.forEach(function (button) {
+        button.addEventListener('click', function () { focusConcept(button.dataset.focus); });
+      });
+
+      var ids = ['x1', 'w1', 'x2', 'w2', 'bias'];
+      function format(n) {
+        var value = Math.abs(n) < .001 ? 0 : n;
+        return value < 0 ? '−' + Math.abs(value).toFixed(1) : value.toFixed(1);
+      }
+      function calculate() {
+        var v = {};
+        ids.forEach(function (id) {
+          v[id] = parseFloat(document.getElementById(id).value);
+          document.getElementById(id + 'v').textContent = format(v[id]);
+        });
+        var z = v.x1 * v.w1 + v.x2 * v.w2 + v.bias;
+        var relu = Math.max(0, z);
+        document.getElementById('z-value').textContent = z.toFixed(2).replace('-', '−');
+        document.getElementById('relu-value').textContent = relu.toFixed(2);
+        document.getElementById('activation-fill').style.width = Math.min(100, relu / 4 * 100) + '%';
+      }
+      ids.forEach(function (id) { document.getElementById(id).addEventListener('input', calculate); });
+      calculate();
+    })();
+  </script>
+</body>
+</html>
